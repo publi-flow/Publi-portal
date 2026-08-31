@@ -1,21 +1,19 @@
-// Keeps ANTHROPIC_API_KEY secret on the server
-export default async (req) => {
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405, headers: { "Content-Type": "application/json" },
-    });
+// Netlify Function — keeps ANTHROPIC_API_KEY secret on the server
+export async function handler(event) {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const apiKey = Netlify.env.get("ANTHROPIC_API_KEY");
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "ANTHROPIC_API_KEY não configurada. Vá em Site settings → Environment variables no Netlify." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "ANTHROPIC_API_KEY não configurada no Netlify." }),
+    };
   }
 
   try {
-    const body = await req.json();
+    const body = JSON.parse(event.body);
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -32,16 +30,15 @@ export default async (req) => {
     });
 
     const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: response.ok ? 200 : response.status,
+    return {
+      statusCode: response.ok ? 200 : response.status,
       headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify(data),
+    };
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Erro interno: " + err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Erro interno: " + err.message }),
+    };
   }
-};
-
-export const config = { path: "/api/generate-content" };
+}

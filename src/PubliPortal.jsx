@@ -1164,7 +1164,7 @@ Segmento: ${client.segment || "não informado"}
 Tipos contratados: ${planDetail}
 ${prompt ? `Tema/contexto específico: ${prompt}` : "Gere ideias estratégicas para o próximo mês, variando entre conteúdos de atração, engajamento e conversão. Misture vídeos e imagens estáticas."}`;
 
-      const response = await fetch("/api/generate-content", {
+      const response = await fetch("/.netlify/functions/generate-content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
