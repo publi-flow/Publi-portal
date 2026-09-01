@@ -875,7 +875,7 @@ export default function PubliPortal() {
                             key={c.id}
                             style={styles.contentBadgeSmall}
                             onClick={(e) => { e.stopPropagation(); setEditingContent(c); setShowContentForm(true); }}
-                          >{c.type?.slice(0,3)}</span>
+                          >{c.type}</span>
                         ))}
                       </div>
                     );
