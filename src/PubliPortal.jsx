@@ -5,6 +5,9 @@ const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","A
 const WEEKDAYS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const CONTENT_TYPES = ["Reels","Carrossel","Stories","Foto","Vídeo Longo","Bastidores","Depoimento"];
 
+const VIDEO_TYPES = ["Reels","Vídeo Longo","Stories","Bastidores","Depoimento"];
+const isVideoContent = (c) => c.format === "video" || VIDEO_TYPES.includes(c.type);
+
 const BRIEF_QUESTIONS = [
   {
     section: "Sobre o negócio",
@@ -187,13 +190,22 @@ export default function PubliPortal() {
   const [selectedPortalDay, setSelectedPortalDay] = useState(null);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [clientTab, setClientTab] = useState("calendar"); // "calendar" | "briefing"
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Persistence: Supabase (synced) + localStorage (cache/fallback)
   useEffect(() => {
     (async () => {
       try {
-        const loaded = await loadData();
-        setData(loaded);
+        const loadedData = await loadData();
+        setData(loadedData);
+
+        // Check URL for portal link: ?portal=CLIENT_ID
+        const params = new URLSearchParams(window.location.search);
+        const portalId = params.get("portal");
+        if (portalId && loadedData.clients?.some(c => c.id === portalId)) {
+          setClientPortalId(portalId);
+          setView("portal");
+        }
       } catch {}
       setLoaded(true);
     })();
@@ -359,7 +371,9 @@ export default function PubliPortal() {
             </div>
           </div>
           <div style={styles.portalClientName}>{client.name}</div>
-          <button style={styles.btnBackPortal} onClick={() => setView("admin")}>Sair</button>
+          {!new URLSearchParams(window.location.search).get("portal") && (
+            <button style={styles.btnBackPortal} onClick={() => setView("admin")}>Sair</button>
+          )}
         </header>
 
         <div style={styles.portalBody}>
@@ -485,7 +499,8 @@ export default function PubliPortal() {
 
             <div style={styles.legend}>
               <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#f97316"}} /> Gravação</span>
-              <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#6366f1"}} /> Postagem</span>
+              <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#7c3aed"}} /> Vídeo / Reels</span>
+              <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#eab308"}} /> Foto / Imagem</span>
             </div>
 
             <div style={styles.calGrid}>
@@ -503,12 +518,16 @@ export default function PubliPortal() {
                 const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
                 const isSelected = selectedPortalDay === dateStr;
                 const hasContent = dayContents.length > 0 || isRec;
+                const hasVideo = dayContents.some(c => isVideoContent(c));
+                const hasImage = dayContents.some(c => !isVideoContent(c));
+                const cellColor = isRec ? styles.calCellRec : hasVideo ? styles.calCellVideo : hasImage ? styles.calCellImage : {};
+                const isColored = isRec || hasVideo || hasImage;
                 return (
                   <div
                     key={day}
                     style={{
                       ...styles.calCell,
-                      ...(isRec ? styles.calCellRec : {}),
+                      ...cellColor,
                       ...(isToday ? styles.calCellToday : {}),
                       ...(isSelected ? styles.calCellSelected : {}),
                       ...(hasContent ? { cursor: "pointer" } : {}),
@@ -517,7 +536,7 @@ export default function PubliPortal() {
                   >
                     <span style={{
                       ...styles.calCellDay,
-                      ...(isRec ? { color: "#fff", fontWeight: 700 } : {}),
+                      ...(isColored ? { color: "#fff", fontWeight: 700 } : {}),
                     }}>{day}</span>
                     {isRec && <span style={styles.recBadge}>📹</span>}
                     {dayContents.length > 0 && (
@@ -683,6 +702,22 @@ export default function PubliPortal() {
                   setClientPortalId(selectedClient);
                   setView("portal");
                 }}>👁 Ver portal</button>
+                <button style={linkCopied ? styles.btnCopied : styles.btnShare} onClick={() => {
+                  const url = `${window.location.origin}?portal=${selectedClient}`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2500);
+                  }).catch(() => {
+                    const ta = document.createElement("textarea");
+                    ta.value = url;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(ta);
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2500);
+                  });
+                }}>{linkCopied ? "✓ Link copiado!" : "🔗 Compartilhar portal"}</button>
                 <button style={styles.btnDanger} onClick={() => deleteClient(selectedClient)}>Excluir</button>
               </div>
             </div>
@@ -750,7 +785,8 @@ export default function PubliPortal() {
 
                 <div style={styles.legend}>
                   <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#f97316"}} /> Gravação</span>
-                  <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#6366f1"}} /> Postagem</span>
+                  <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#7c3aed"}} /> Vídeo / Reels</span>
+                  <span style={styles.legendItem}><span style={{...styles.legendDot, background: "#eab308"}} /> Foto / Imagem</span>
                 </div>
 
                 <div style={styles.calGrid}>
@@ -767,12 +803,16 @@ export default function PubliPortal() {
                     const hasConflict = conflicts.length > 0;
                     const dayContents = monthContents.filter(c => c.postDate === dateStr);
                     const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+                    const hasVideo = dayContents.some(c => isVideoContent(c));
+                    const hasImage = dayContents.some(c => !isVideoContent(c));
+                    const cellColor = isRec ? styles.calCellRec : hasVideo ? styles.calCellVideo : hasImage ? styles.calCellImage : {};
+                    const isColored = isRec || hasVideo || hasImage;
                     return (
                       <div
                         key={day}
                         style={{
                           ...styles.calCell,
-                          ...(isRec ? styles.calCellRec : {}),
+                          ...cellColor,
                           ...(isToday ? styles.calCellToday : {}),
                           ...(showRecordingPicker && hasConflict && !isRec ? styles.calCellConflict : {}),
                           ...(showRecordingPicker ? { cursor: "pointer" } : {}),
@@ -790,7 +830,7 @@ export default function PubliPortal() {
                       >
                         <span style={{
                           ...styles.calCellDay,
-                          ...(isRec ? { color: "#fff", fontWeight: 700 } : {}),
+                          ...(isColored ? { color: "#fff", fontWeight: 700 } : {}),
                         }}>{day}</span>
                         {isRec && <span style={styles.recBadgeSmall}>📹</span>}
                         {showRecordingPicker && hasConflict && !isRec && <span style={{ fontSize: 9, color: "#dc2626" }}>⚠️</span>}
@@ -2009,228 +2049,220 @@ function ContentForm({ initial, clientId, clientTypes, month, year, onSave, onCa
       </div>
 
       <div style={styles.formActions}>
-        <button style={styles.btnCancel} onClick={onCancel}>Cancelar</button>
-        <button style={styles.btnPrimary} onClick={() => title && onSave({
-          ...(initial || {}),
-          clientId, title, type, description: desc, refLink, postDate, recordDate,
-          recorded, delivered,
-        })}>Salvar</button>
-      </div>
-    </div>
-  );
-}
-
-// ─── STYLES — DARK THEME ───
+// ─── STYLES — LIGHT THEME ───
 const styles = {
-  loadWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#000" },
-  loadDot: { width: 32, height: 32, borderRadius: "50%", background: "#fff", animation: "pulse 1s infinite" },
-  admin: { display: "flex", height: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#0a0a0a", color: "#e5e5e5" },
-  sidebar: { width: 240, background: "#000", color: "#e5e5e5", display: "flex", flexDirection: "column", flexShrink: 0, borderRight: "1px solid #1a1a1a" },
-  sidebarTop: { display: "flex", alignItems: "center", gap: 10, padding: "20px 16px 12px", borderBottom: "1px solid #1a1a1a" },
-  logoMark: { width: 36, height: 36, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, color: "#000" },
+  loadWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0f172a" },
+  loadDot: { width: 32, height: 32, borderRadius: "50%", background: "#6366f1" },
+  admin: { display: "flex", height: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", color: "#1e293b" },
+  sidebar: { width: 240, background: "#0f172a", color: "#e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 },
+  sidebarTop: { display: "flex", alignItems: "center", gap: 10, padding: "20px 16px 12px", borderBottom: "1px solid #1e293b" },
+  logoMark: { width: 36, height: 36, borderRadius: 10, background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: "#fff" },
   sidebarBrand: { fontWeight: 700, fontSize: 15, letterSpacing: -0.3 },
   sidebarSection: { padding: "16px 12px", flex: 1, overflowY: "auto" },
-  sidebarLabel: { fontSize: 11, fontWeight: 600, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  sidebarLabel: { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   sidebarItem: { display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginBottom: 2 },
-  sidebarItemActive: { background: "#1a1a1a" },
-  sidebarAvatar: { width: 28, height: 28, borderRadius: 7, background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#888", flexShrink: 0 },
+  sidebarItemActive: { background: "#1e293b" },
+  sidebarAvatar: { width: 28, height: 28, borderRadius: 7, background: "#334155", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#94a3b8", flexShrink: 0 },
   sidebarName: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  btnAddClient: { width: "100%", padding: "10px 0", background: "transparent", border: "1px dashed #333", color: "#666", borderRadius: 8, cursor: "pointer", fontSize: 13, marginTop: 8 },
+  btnAddClient: { width: "100%", padding: "10px 0", background: "transparent", border: "1px dashed #334155", color: "#94a3b8", borderRadius: 8, cursor: "pointer", fontSize: 13, marginTop: 8 },
   main: { flex: 1, overflowY: "auto", padding: "24px 32px" },
   emptyState: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" },
   clientHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: "wrap" },
-  clientName: { margin: 0, fontSize: 22, fontWeight: 700, color: "#fff" },
-  clientMeta: { fontSize: 13, color: "#888", marginTop: 2 },
+  clientName: { margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a" },
+  clientMeta: { fontSize: 13, color: "#64748b", marginTop: 2 },
   clientActions: { display: "flex", gap: 8, flexWrap: "wrap" },
   monthNav: { display: "flex", alignItems: "center", gap: 16, justifyContent: "center", margin: "16px 0" },
-  monthBtn: { background: "none", border: "1px solid #333", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 18, color: "#999", display: "flex", alignItems: "center", justifyContent: "center" },
-  monthLabel: { fontSize: 17, fontWeight: 600, color: "#fff", minWidth: 160, textAlign: "center" },
-  legend: { display: "flex", gap: 20, justifyContent: "center", marginBottom: 12 },
-  legendItem: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#888" },
+  monthBtn: { background: "none", border: "1px solid #e2e8f0", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 18, color: "#475569", display: "flex", alignItems: "center", justifyContent: "center" },
+  monthLabel: { fontSize: 17, fontWeight: 600, color: "#0f172a", minWidth: 160, textAlign: "center" },
+  legend: { display: "flex", gap: 16, justifyContent: "center", marginBottom: 12, flexWrap: "wrap" },
+  legendItem: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#64748b" },
   legendDot: { width: 10, height: 10, borderRadius: "50%", display: "inline-block" },
-  calGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, background: "#1a1a1a", borderRadius: 12, overflow: "hidden", border: "1px solid #1a1a1a" },
-  calDayHeader: { background: "#111", padding: "8px 0", textAlign: "center", fontSize: 11, fontWeight: 600, color: "#666" },
-  calCellEmpty: { background: "#0a0a0a", minHeight: 72 },
-  calCell: { background: "#111", minHeight: 72, padding: 6, position: "relative", display: "flex", flexDirection: "column", gap: 2, fontSize: 11 },
-  calCellRec: { background: "#fff", color: "#000" },
-  calCellToday: { boxShadow: "inset 0 0 0 2px #fff" },
-  calCellDay: { fontWeight: 600, fontSize: 13, color: "#ccc" },
-  recBadge: { fontSize: 10, background: "rgba(0,0,0,0.1)", borderRadius: 4, padding: "1px 4px" },
+  calGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, background: "#e2e8f0", borderRadius: 12, overflow: "hidden", border: "1px solid #e2e8f0" },
+  calDayHeader: { background: "#f1f5f9", padding: "8px 0", textAlign: "center", fontSize: 11, fontWeight: 600, color: "#64748b" },
+  calCellEmpty: { background: "#f8fafc", minHeight: 72 },
+  calCell: { background: "#fff", minHeight: 72, padding: 6, position: "relative", display: "flex", flexDirection: "column", gap: 2, fontSize: 11 },
+  calCellRec: { background: "#f97316" },
+  calCellVideo: { background: "#7c3aed" },
+  calCellImage: { background: "#eab308" },
+  calCellToday: { boxShadow: "inset 0 0 0 2px #0f172a" },
+  calCellDay: { fontWeight: 600, fontSize: 13, color: "#334155" },
+  recBadge: { fontSize: 10, background: "rgba(255,255,255,0.3)", borderRadius: 4, padding: "1px 4px", color: "#fff" },
   recBadgeSmall: { fontSize: 10 },
-  contentBadge: { fontSize: 10, background: "#1a1a1a", color: "#ccc", borderRadius: 4, padding: "2px 5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  contentBadgeSmall: { fontSize: 9, background: "rgba(255,255,255,0.1)", color: "#ccc", borderRadius: 3, padding: "1px 3px", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  contentBadge: { fontSize: 10, background: "#eef2ff", color: "#4338ca", borderRadius: 4, padding: "2px 5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  contentBadgeSmall: { fontSize: 9, background: "rgba(255,255,255,0.3)", color: "#fff", borderRadius: 3, padding: "1px 3px", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   adminGrid: { display: "flex", gap: 24, marginTop: 8, flexWrap: "wrap" },
   adminCalWrap: { flex: 2, minWidth: 380 },
-  adminListPanel: { flex: 1, minWidth: 260, background: "#111", borderRadius: 12, border: "1px solid #1a1a1a", padding: 16 },
-  sectionTitle: { margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: "#fff" },
-  adminCounter: { fontSize: 12, color: "#fff", fontWeight: 600 },
-  adminContentItem: { background: "#0a0a0a", borderRadius: 8, padding: "10px 12px", border: "1px solid #1a1a1a" },
-  contentTypeTag: { fontSize: 10, fontWeight: 700, color: "#000", background: "#fff", borderRadius: 4, padding: "2px 6px", marginRight: 8 },
-  adminContentTitle: { fontSize: 13, fontWeight: 600, color: "#e5e5e5" },
-  adminContentMeta: { display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: "#666", flexWrap: "wrap" },
-  btnPrimary: { padding: "8px 16px", background: "#fff", color: "#000", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  btnSecondary: { padding: "8px 14px", background: "#1a1a1a", color: "#ccc", border: "1px solid #333", borderRadius: 8, cursor: "pointer", fontSize: 13 },
-  btnDanger: { padding: "8px 14px", background: "#1a0a0a", color: "#f87171", border: "1px solid #333", borderRadius: 8, cursor: "pointer", fontSize: 13 },
-  btnPortalPreview: { padding: "8px 14px", background: "#1a1a1a", color: "#ccc", border: "1px solid #333", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  btnRec: { padding: "6px 12px", background: "#1a1a1a", color: "#ccc", border: "1px solid #333", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 },
-  btnRecActive: { padding: "6px 12px", background: "#fff", color: "#000", border: "1px solid #fff", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 },
-  btnMini: { background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#666", padding: 2 },
+  adminListPanel: { flex: 1, minWidth: 260, background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 16 },
+  sectionTitle: { margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: "#0f172a" },
+  adminCounter: { fontSize: 12, color: "#6366f1", fontWeight: 600 },
+  adminContentItem: { background: "#f8fafc", borderRadius: 8, padding: "10px 12px", border: "1px solid #f1f5f9" },
+  contentTypeTag: { fontSize: 10, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 4, padding: "2px 6px", marginRight: 8 },
+  adminContentTitle: { fontSize: 13, fontWeight: 600, color: "#1e293b" },
+  adminContentMeta: { display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: "#94a3b8", flexWrap: "wrap" },
+  btnPrimary: { padding: "8px 16px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
+  btnSecondary: { padding: "8px 14px", background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 13 },
+  btnDanger: { padding: "8px 14px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, cursor: "pointer", fontSize: 13 },
+  btnPortalPreview: { padding: "8px 14px", background: "#eef2ff", color: "#4338ca", border: "1px solid #c7d2fe", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
+  btnRec: { padding: "6px 12px", background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnRecActive: { padding: "6px 12px", background: "#f97316", color: "#fff", border: "1px solid #f97316", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnMini: { background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#94a3b8", padding: 2 },
   btnMiniDanger: { background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#f87171", padding: 2 },
-  btnCancel: { padding: "8px 16px", background: "#1a1a1a", color: "#999", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
-  btnBack: { padding: "10px 20px", background: "#fff", color: "#000", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, marginTop: 16 },
-  btnBackPortal: { padding: "6px 16px", background: "rgba(255,255,255,0.1)", color: "#ccc", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, cursor: "pointer", fontSize: 13 },
-  portal: { minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#0a0a0a", color: "#e5e5e5" },
-  portalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", background: "#000", color: "#e5e5e5", flexWrap: "wrap", gap: 12, borderBottom: "1px solid #1a1a1a" },
+  btnCancel: { padding: "8px 16px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
+  btnBack: { padding: "10px 20px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, marginTop: 16 },
+  btnBackPortal: { padding: "6px 16px", background: "rgba(255,255,255,0.15)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, cursor: "pointer", fontSize: 13 },
+  portal: { minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", color: "#1e293b" },
+  portalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", background: "#0f172a", color: "#e2e8f0", flexWrap: "wrap", gap: 12 },
   portalBrand: { display: "flex", alignItems: "center", gap: 10 },
   portalTitle: { fontWeight: 700, fontSize: 16, lineHeight: 1.2 },
-  portalSub: { fontSize: 11, color: "#666" },
-  portalClientName: { fontSize: 15, fontWeight: 600, color: "#fff" },
+  portalSub: { fontSize: 11, color: "#94a3b8" },
+  portalClientName: { fontSize: 15, fontWeight: 600, color: "#c7d2fe" },
   portalBody: { maxWidth: 860, margin: "0 auto", padding: "24px 20px" },
   portalEmpty: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" },
   portalSection: { marginTop: 32 },
-  portalH3: { margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#fff" },
+  portalH3: { margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#0f172a" },
   contentList: { display: "flex", flexDirection: "column", gap: 10 },
-  contentCard: { background: "#111", borderRadius: 10, padding: "14px 18px", border: "1px solid #1a1a1a" },
+  contentCard: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1px solid #e2e8f0" },
   contentCardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  contentType: { fontSize: 11, fontWeight: 700, color: "#000", background: "#fff", borderRadius: 5, padding: "3px 8px" },
-  contentPostDate: { fontSize: 12, color: "#666" },
-  contentTitle: { fontSize: 15, fontWeight: 600, color: "#fff" },
-  contentDesc: { fontSize: 13, color: "#888", marginTop: 4 },
-  contentRecDate: { fontSize: 12, color: "#999", marginTop: 6 },
+  contentType: { fontSize: 11, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 5, padding: "3px 8px" },
+  contentPostDate: { fontSize: 12, color: "#94a3b8" },
+  contentTitle: { fontSize: 15, fontWeight: 600, color: "#0f172a" },
+  contentDesc: { fontSize: 13, color: "#64748b", marginTop: 4 },
+  contentRecDate: { fontSize: 12, color: "#c2410c", marginTop: 6 },
   summaryRow: { display: "flex", gap: 12, marginTop: 32, flexWrap: "wrap" },
-  summaryCard: { flex: 1, minWidth: 120, background: "#111", borderRadius: 10, padding: 20, textAlign: "center", border: "1px solid #1a1a1a" },
-  summaryNum: { fontSize: 32, fontWeight: 800, color: "#fff" },
-  summaryLabel: { fontSize: 13, color: "#666", marginTop: 4 },
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-  modal: { background: "#111", borderRadius: 16, padding: "28px 32px", width: "90%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 48px rgba(0,0,0,0.5)", border: "1px solid #222" },
-  formTitle: { margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: "#fff" },
-  formLabel: { display: "block", fontSize: 12, fontWeight: 600, color: "#888", marginTop: 14, marginBottom: 4 },
-  input: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #333", fontSize: 14, color: "#e5e5e5", outline: "none", boxSizing: "border-box", background: "#0a0a0a" },
+  summaryCard: { flex: 1, minWidth: 120, background: "#fff", borderRadius: 10, padding: 20, textAlign: "center", border: "1px solid #e2e8f0" },
+  summaryNum: { fontSize: 32, fontWeight: 800, color: "#6366f1" },
+  summaryLabel: { fontSize: 13, color: "#64748b", marginTop: 4 },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
+  modal: { background: "#fff", borderRadius: 16, padding: "28px 32px", width: "90%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 48px rgba(0,0,0,0.2)" },
+  formTitle: { margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: "#0f172a" },
+  formLabel: { display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginTop: 14, marginBottom: 4 },
+  input: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, color: "#1e293b", outline: "none", boxSizing: "border-box", background: "#f8fafc" },
   typeGrid: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 },
-  typeTag: { padding: "6px 12px", borderRadius: 20, border: "1px solid #333", background: "#0a0a0a", color: "#999", fontSize: 12, cursor: "pointer" },
-  typeTagActive: { padding: "6px 12px", borderRadius: 20, border: "1px solid #fff", background: "#fff", color: "#000", fontSize: 12, cursor: "pointer", fontWeight: 600 },
+  typeTag: { padding: "6px 12px", borderRadius: 20, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 12, cursor: "pointer" },
+  typeTagActive: { padding: "6px 12px", borderRadius: 20, border: "1px solid #6366f1", background: "#eef2ff", color: "#4338ca", fontSize: 12, cursor: "pointer", fontWeight: 600 },
   formActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 },
-  portalTypeCard: { flex: "1 1 120px", background: "#111", borderRadius: 10, padding: "14px 18px", border: "1px solid #1a1a1a", textAlign: "center" },
-  portalTypeLabel: { fontSize: 12, fontWeight: 600, color: "#666", marginBottom: 4 },
+  portalTypeCard: { flex: "1 1 120px", background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1px solid #e2e8f0", textAlign: "center" },
+  portalTypeLabel: { fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 },
   portalTypeNums: { display: "flex", alignItems: "baseline", justifyContent: "center" },
-  portalBlock: { background: "#111", borderRadius: 14, border: "1px solid #1a1a1a", padding: "20px 24px", marginBottom: 16 },
+  portalBlock: { background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "20px 24px", marginBottom: 16 },
   portalBlockHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 },
   portalBlockIcon: { fontSize: 20 },
-  portalBlockTitle: { margin: 0, fontSize: 17, fontWeight: 700, color: "#fff", flex: 1 },
-  portalBlockCount: { fontSize: 13, fontWeight: 700, color: "#000", background: "#fff", borderRadius: 20, padding: "4px 12px" },
-  portalEmptyText: { color: "#555", fontSize: 14, margin: "4px 0" },
+  portalBlockTitle: { margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a", flex: 1 },
+  portalBlockCount: { fontSize: 13, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 20, padding: "4px 12px" },
+  portalEmptyText: { color: "#94a3b8", fontSize: 14, margin: "4px 0" },
   recDaysList: { display: "flex", gap: 10, flexWrap: "wrap" },
-  recDayCard: { background: "#1a1a1a", border: "1px solid #333", borderRadius: 10, padding: "12px 16px", minWidth: 140, flex: "1 1 140px" },
+  recDayCard: { background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "12px 16px", minWidth: 140, flex: "1 1 140px" },
   recDayDate: { display: "flex", alignItems: "baseline", gap: 6 },
-  recDayNum: { fontSize: 28, fontWeight: 800, color: "#fff", lineHeight: 1 },
-  recDayName: { fontSize: 13, color: "#888", fontWeight: 500 },
+  recDayNum: { fontSize: 28, fontWeight: 800, color: "#c2410c", lineHeight: 1 },
+  recDayName: { fontSize: 13, color: "#9a3412", fontWeight: 500 },
   recDayContents: { marginTop: 8, display: "flex", flexDirection: "column", gap: 3 },
-  recDayContentTag: { fontSize: 11, color: "#999", background: "rgba(255,255,255,0.05)", borderRadius: 4, padding: "2px 6px" },
-  recDayDetails: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6, fontSize: 11, color: "#888" },
-  calCellConflict: { background: "#1a0a0a", border: "1px dashed #f87171" },
-  conflictBanner: { background: "#1a0a0a", border: "1px solid #333", borderRadius: 8, padding: "12px 16px", marginBottom: 16, color: "#f87171", fontSize: 13 },
-  refLink: { display: "inline-block", fontSize: 12, color: "#fff", background: "#333", borderRadius: 4, padding: "4px 10px", marginTop: 6, textDecoration: "none", fontWeight: 600 },
-  refLinkSmall: { fontSize: 11, color: "#999", textDecoration: "none", fontWeight: 600, flexShrink: 0 },
+  recDayContentTag: { fontSize: 11, color: "#9a3412", background: "rgba(249,115,22,0.1)", borderRadius: 4, padding: "2px 6px" },
+  recDayDetails: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6, fontSize: 11, color: "#9a3412" },
+  calCellConflict: { background: "#fef2f2", border: "1px dashed #fca5a5" },
+  conflictBanner: { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "12px 16px", marginBottom: 16, color: "#dc2626", fontSize: 13 },
+  refLink: { display: "inline-block", fontSize: 12, color: "#4338ca", background: "#eef2ff", borderRadius: 4, padding: "4px 10px", marginTop: 6, textDecoration: "none", fontWeight: 600 },
+  refLinkSmall: { fontSize: 11, color: "#4338ca", textDecoration: "none", fontWeight: 600, flexShrink: 0 },
   portalContentList: { display: "flex", flexDirection: "column", gap: 0 },
-  portalContentRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #1a1a1a" },
-  portalContentDot: () => ({ width: 8, height: 8, borderRadius: "50%", background: "#fff", flexShrink: 0 }),
-  portalContentTitle: { fontSize: 14, fontWeight: 500, color: "#e5e5e5", flex: 1 },
-  portalContentTypeTag: { fontSize: 11, color: "#000", background: "#fff", borderRadius: 4, padding: "2px 8px", fontWeight: 600, flexShrink: 0 },
-  portalContentDate: { fontSize: 12, color: "#666", flexShrink: 0 },
-  portalTypeSummary: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14, paddingTop: 14, borderTop: "1px solid #1a1a1a" },
-  portalTypePill: { display: "flex", alignItems: "center", gap: 6, background: "#1a1a1a", borderRadius: 20, padding: "5px 12px", border: "1px solid #333" },
-  portalTypePillLabel: { fontSize: 12, color: "#888" },
+  portalContentRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #f1f5f9" },
+  portalContentDot: () => ({ width: 8, height: 8, borderRadius: "50%", background: "#6366f1", flexShrink: 0 }),
+  portalContentTitle: { fontSize: 14, fontWeight: 500, color: "#1e293b", flex: 1 },
+  portalContentTypeTag: { fontSize: 11, color: "#6366f1", background: "#eef2ff", borderRadius: 4, padding: "2px 8px", fontWeight: 600, flexShrink: 0 },
+  portalContentDate: { fontSize: 12, color: "#94a3b8", flexShrink: 0 },
+  portalTypeSummary: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14, paddingTop: 14, borderTop: "1px solid #f1f5f9" },
+  portalTypePill: { display: "flex", alignItems: "center", gap: 6, background: "#f8fafc", borderRadius: 20, padding: "5px 12px", border: "1px solid #e2e8f0" },
+  portalTypePillLabel: { fontSize: 12, color: "#64748b" },
   portalTypePillCount: { fontSize: 12, fontWeight: 800 },
-  calCellSelected: { boxShadow: "inset 0 0 0 2px #fff", background: "#1a1a1a" },
+  calCellSelected: { boxShadow: "inset 0 0 0 2px #6366f1", background: "#eef2ff" },
   calDots: { display: "flex", gap: 3, marginTop: 2, flexWrap: "wrap" },
-  calContentDot: { width: 6, height: 6, borderRadius: "50%", background: "#fff" },
-  dayDetail: { marginTop: 14, background: "#111", borderRadius: 12, border: "1px solid #222", padding: "18px 22px" },
+  calContentDot: { width: 6, height: 6, borderRadius: "50%", background: "#6366f1" },
+  dayDetail: { marginTop: 14, background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 22px" },
   dayDetailHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  dayDetailDate: { fontSize: 18, fontWeight: 700, color: "#fff", marginRight: 8 },
-  dayDetailWeekday: { fontSize: 14, color: "#666" },
-  dayDetailClose: { background: "none", border: "none", fontSize: 18, color: "#666", cursor: "pointer", padding: "4px 8px" },
-  dayDetailRecBanner: { background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, padding: "10px 14px", fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 12, display: "flex", flexDirection: "column", gap: 4 },
-  dayDetailRecSub: { fontSize: 12, fontWeight: 400, color: "#888" },
+  dayDetailDate: { fontSize: 18, fontWeight: 700, color: "#0f172a", marginRight: 8 },
+  dayDetailWeekday: { fontSize: 14, color: "#64748b" },
+  dayDetailClose: { background: "none", border: "none", fontSize: 18, color: "#94a3b8", cursor: "pointer", padding: "4px 8px" },
+  dayDetailRecBanner: { background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 14px", fontSize: 14, fontWeight: 600, color: "#c2410c", marginBottom: 12, display: "flex", flexDirection: "column", gap: 4 },
+  dayDetailRecSub: { fontSize: 12, fontWeight: 400, color: "#9a3412" },
   dayDetailContents: { display: "flex", flexDirection: "column", gap: 10 },
-  dayDetailCard: { background: "#0a0a0a", borderRadius: 10, padding: "14px 16px", border: "1px solid #1a1a1a" },
+  dayDetailCard: { background: "#fff", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" },
   dayDetailCardHeader: { marginBottom: 6 },
-  dayDetailCardTitle: { fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 4 },
-  dayDetailCardDesc: { fontSize: 13, color: "#888", lineHeight: 1.5 },
-  dayDetailCardRec: { fontSize: 12, color: "#999", marginTop: 8 },
+  dayDetailCardTitle: { fontSize: 16, fontWeight: 600, color: "#0f172a", marginBottom: 4 },
+  dayDetailCardDesc: { fontSize: 13, color: "#64748b", lineHeight: 1.5 },
+  dayDetailCardRec: { fontSize: 12, color: "#c2410c", marginTop: 8 },
   statusRow: { display: "flex", gap: 12, marginTop: 6 },
-  statusCheck: { display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#ccc", userSelect: "none" },
-  checkOn: { width: 22, height: 22, borderRadius: 6, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 },
-  checkOff: { width: 22, height: 22, borderRadius: 6, border: "2px solid #444", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center" },
-  btnPDF: { padding: "5px 10px", background: "#1a1a1a", color: "#ccc", border: "1px solid #333", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" },
-  btnAI: { padding: "8px 16px", background: "#fff", color: "#000", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" },
-  aiClientInfo: { background: "#0a0a0a", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#e5e5e5", marginBottom: 14, border: "1px solid #222" },
-  aiError: { background: "#1a0a0a", color: "#f87171", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginTop: 10 },
+  statusCheck: { display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#475569", userSelect: "none" },
+  checkOn: { width: 22, height: 22, borderRadius: 6, background: "#6366f1", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 },
+  checkOff: { width: 22, height: 22, borderRadius: 6, border: "2px solid #cbd5e1", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" },
+  btnPDF: { padding: "5px 10px", background: "#eef2ff", color: "#4338ca", border: "1px solid #c7d2fe", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" },
+  btnAI: { padding: "8px 16px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" },
+  aiClientInfo: { background: "#f8fafc", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#1e293b", marginBottom: 14, border: "1px solid #e2e8f0" },
+  aiError: { background: "#fef2f2", color: "#dc2626", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginTop: 10 },
   aiResultList: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 340, overflowY: "auto" },
-  aiResultItem: { display: "flex", gap: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #222", cursor: "pointer", background: "#0a0a0a" },
-  aiResultSelected: { background: "#1a1a1a", borderColor: "#555" },
+  aiResultItem: { display: "flex", gap: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer", background: "#fff" },
+  aiResultSelected: { background: "#eef2ff", borderColor: "#c7d2fe" },
   aiResultCheck: { flexShrink: 0, paddingTop: 2 },
-  formatTagVid: { fontSize: 10, fontWeight: 700, color: "#fff", background: "#333", border: "1px solid #444", borderRadius: 4, padding: "2px 7px" },
-  formatTagImg: { fontSize: 10, fontWeight: 700, color: "#000", background: "#ccc", border: "1px solid #999", borderRadius: 4, padding: "2px 7px" },
-  formatBadgeVid: { fontSize: 11, fontWeight: 600, color: "#fff", background: "#333", borderRadius: 12, padding: "3px 8px" },
-  formatBadgeImg: { fontSize: 11, fontWeight: 600, color: "#000", background: "#ccc", borderRadius: 12, padding: "3px 8px" },
-  scheduleItem: { background: "#0a0a0a", borderRadius: 10, padding: "14px 16px", border: "1px solid #222" },
-  tabBar: { display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid #222", paddingBottom: 0 },
-  tab: { padding: "10px 16px", background: "none", border: "none", borderBottom: "2px solid transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#666", marginBottom: -1, display: "flex", alignItems: "center", gap: 6 },
-  tabActive: { padding: "10px 16px", background: "none", border: "none", borderBottom: "2px solid #fff", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: -1, display: "flex", alignItems: "center", gap: 6 },
-  tabBadge: { fontSize: 10, fontWeight: 700, color: "#999", background: "#1a1a1a", borderRadius: 10, padding: "1px 6px" },
-  tabBadgeDone: { fontSize: 10, fontWeight: 700, color: "#10b981", background: "#0a1a0a", borderRadius: 10, padding: "1px 6px" },
-  briefProgress: { background: "#111", borderRadius: 12, border: "1px solid #1a1a1a", padding: "18px 22px", marginBottom: 14 },
+  formatTagVid: { fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 4, padding: "2px 7px" },
+  formatTagImg: { fontSize: 10, fontWeight: 700, color: "#a16207", background: "#fefce8", border: "1px solid #fde68a", borderRadius: 4, padding: "2px 7px" },
+  formatBadgeVid: { fontSize: 11, fontWeight: 600, color: "#7c3aed", background: "#f5f3ff", borderRadius: 12, padding: "3px 8px" },
+  formatBadgeImg: { fontSize: 11, fontWeight: 600, color: "#a16207", background: "#fefce8", borderRadius: 12, padding: "3px 8px" },
+  scheduleItem: { background: "#f8fafc", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" },
+  tabBar: { display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid #e2e8f0", paddingBottom: 0 },
+  tab: { padding: "10px 16px", background: "none", border: "none", borderBottom: "2px solid transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#64748b", marginBottom: -2, display: "flex", alignItems: "center", gap: 6 },
+  tabActive: { padding: "10px 16px", background: "none", border: "none", borderBottom: "2px solid #6366f1", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#6366f1", marginBottom: -2, display: "flex", alignItems: "center", gap: 6 },
+  tabBadge: { fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "#fffbeb", borderRadius: 10, padding: "1px 6px" },
+  tabBadgeDone: { fontSize: 10, fontWeight: 700, color: "#10b981", background: "#ecfdf5", borderRadius: 10, padding: "1px 6px" },
+  briefProgress: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 22px", marginBottom: 14 },
   briefProgressInfo: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  briefProgressBar: { height: 6, background: "#1a1a1a", borderRadius: 3, overflow: "hidden" },
+  briefProgressBar: { height: 6, background: "#f1f5f9", borderRadius: 3, overflow: "hidden" },
   briefProgressFill: { height: "100%", borderRadius: 3, transition: "width 0.3s" },
-  briefSection: { background: "#111", borderRadius: 12, border: "1px solid #1a1a1a", marginBottom: 8, overflow: "hidden" },
+  briefSection: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", marginBottom: 8, overflow: "hidden" },
   briefSectionHeader: { display: "flex", alignItems: "center", gap: 8, padding: "14px 18px", cursor: "pointer", userSelect: "none" },
-  briefSectionTitle: { flex: 1, fontSize: 15, fontWeight: 700, color: "#fff" },
-  briefSectionCount: { fontSize: 12, fontWeight: 600, color: "#666", background: "#1a1a1a", borderRadius: 10, padding: "2px 8px" },
+  briefSectionTitle: { flex: 1, fontSize: 15, fontWeight: 700, color: "#0f172a" },
+  briefSectionCount: { fontSize: 12, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 10, padding: "2px 8px" },
   briefSectionBody: { padding: "0 18px 18px" },
   dashMetrics: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 24 },
-  dashCard: { background: "#111", borderRadius: 12, border: "1px solid #1a1a1a", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 6 },
+  dashCard: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 6 },
   dashCardIcon: { fontSize: 22 },
-  dashCardNum: { fontSize: 32, fontWeight: 800, color: "#fff", lineHeight: 1 },
-  dashCardLabel: { fontSize: 13, color: "#666" },
-  dashCardBar: { height: 4, background: "#1a1a1a", borderRadius: 2, marginTop: 4, overflow: "hidden" },
+  dashCardNum: { fontSize: 32, fontWeight: 800, color: "#0f172a", lineHeight: 1 },
+  dashCardLabel: { fontSize: 13, color: "#64748b" },
+  dashCardBar: { height: 4, background: "#f1f5f9", borderRadius: 2, marginTop: 4, overflow: "hidden" },
   dashCardBarFill: { height: "100%", borderRadius: 2, transition: "width 0.3s" },
-  dashCardSub: { fontSize: 12, color: "#555", marginTop: 2 },
-  dashSection: { background: "#111", borderRadius: 12, border: "1px solid #1a1a1a", padding: "18px 22px", marginBottom: 16 },
+  dashCardSub: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
+  dashSection: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 22px", marginBottom: 16 },
   dashSectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" },
   dashSectionIcon: { fontSize: 18 },
-  dashSectionTitle: { margin: 0, fontSize: 16, fontWeight: 700, color: "#fff", flex: 1 },
-  dashSectionDate: { fontSize: 12, color: "#666", fontWeight: 500 },
-  dashEmpty: { padding: "16px 0", fontSize: 13, color: "#555", textAlign: "center" },
+  dashSectionTitle: { margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a", flex: 1 },
+  dashSectionDate: { fontSize: 12, color: "#94a3b8", fontWeight: 500 },
+  dashEmpty: { padding: "16px 0", fontSize: 13, color: "#94a3b8", textAlign: "center" },
   dashPostList: { display: "flex", flexDirection: "column", gap: 6 },
-  dashPostItem: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, border: "1px solid #1a1a1a", background: "#0a0a0a", gap: 12, flexWrap: "wrap" },
+  dashPostItem: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, border: "1px solid #f1f5f9", background: "#f8fafc", gap: 12, flexWrap: "wrap" },
   dashPostLeft: { display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 },
-  dashPostDot: (delivered) => ({ width: 10, height: 10, borderRadius: "50%", background: delivered ? "#10b981" : "#666", flexShrink: 0 }),
-  dashPostTitle: { fontSize: 14, fontWeight: 600, color: "#e5e5e5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  dashPostDot: (delivered) => ({ width: 10, height: 10, borderRadius: "50%", background: delivered ? "#10b981" : "#f59e0b", flexShrink: 0 }),
+  dashPostTitle: { fontSize: 14, fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   dashPostMeta: { display: "flex", gap: 6, alignItems: "center", marginTop: 2 },
-  dashPostClient: { fontSize: 12, color: "#999", cursor: "pointer", fontWeight: 500 },
+  dashPostClient: { fontSize: 12, color: "#6366f1", cursor: "pointer", fontWeight: 500 },
   dashPostStatus: { flexShrink: 0 },
-  dashStatusDone: { fontSize: 11, fontWeight: 700, color: "#10b981", background: "#0a1a0a", borderRadius: 20, padding: "3px 10px" },
-  dashStatusReady: { fontSize: 11, fontWeight: 700, color: "#fff", background: "#333", borderRadius: 20, padding: "3px 10px" },
-  dashStatusEdit: { fontSize: 11, fontWeight: 700, color: "#999", background: "#1a1a1a", borderRadius: 20, padding: "3px 10px" },
-  dashStatusPending: { fontSize: 11, fontWeight: 700, color: "#666", background: "#111", borderRadius: 20, padding: "3px 10px", border: "1px solid #333" },
+  dashStatusDone: { fontSize: 11, fontWeight: 700, color: "#10b981", background: "#ecfdf5", borderRadius: 20, padding: "3px 10px" },
+  dashStatusReady: { fontSize: 11, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 20, padding: "3px 10px" },
+  dashStatusEdit: { fontSize: 11, fontWeight: 700, color: "#8b5cf6", background: "#f5f3ff", borderRadius: 20, padding: "3px 10px" },
+  dashStatusPending: { fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "#fffbeb", borderRadius: 20, padding: "3px 10px" },
   dashWeekDay: { display: "flex", flexDirection: "column", alignItems: "center", minWidth: 52, flexShrink: 0 },
-  dashWeekDayLabel: { fontSize: 11, color: "#666", fontWeight: 600 },
-  dashTodayTag: { fontSize: 9, fontWeight: 800, color: "#fff", background: "#333", borderRadius: 4, padding: "1px 5px", marginTop: 2 },
-  dashTable: { borderRadius: 8, overflow: "hidden", border: "1px solid #1a1a1a" },
-  dashTableHead: { display: "flex", padding: "10px 14px", background: "#111", fontSize: 11, fontWeight: 700, color: "#666", gap: 4 },
-  dashTableRow: { display: "flex", padding: "10px 14px", borderTop: "1px solid #1a1a1a", fontSize: 13, alignItems: "center", gap: 4, cursor: "pointer", background: "#0a0a0a" },
+  dashWeekDayLabel: { fontSize: 11, color: "#64748b", fontWeight: 600 },
+  dashTodayTag: { fontSize: 9, fontWeight: 800, color: "#dc2626", background: "#fef2f2", borderRadius: 4, padding: "1px 5px", marginTop: 2 },
+  dashTable: { borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0" },
+  dashTableHead: { display: "flex", padding: "10px 14px", background: "#f1f5f9", fontSize: 11, fontWeight: 700, color: "#64748b", gap: 4 },
+  dashTableRow: { display: "flex", padding: "10px 14px", borderTop: "1px solid #f1f5f9", fontSize: 13, alignItems: "center", gap: 4, cursor: "pointer" },
   dashTableCol: { flex: 1, textAlign: "center", fontWeight: 700, fontSize: 13 },
-  btnCopy: { padding: "8px 16px", background: "#fff", color: "#000", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 },
+  btnCopy: { padding: "8px 16px", background: "#25D366", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 },
   btnCopied: { padding: "8px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 },
-  typePlanRow: { display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0a0a0a", borderRadius: 8, padding: "8px 12px", border: "1px solid #222" },
-  typePlanName: { fontSize: 14, fontWeight: 600, color: "#e5e5e5" },
+  btnShare: { padding: "8px 14px", background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
+  typePlanRow: { display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", borderRadius: 8, padding: "8px 12px", border: "1px solid #e2e8f0" },
+  typePlanName: { fontSize: 14, fontWeight: 600, color: "#1e293b" },
   typePlanControls: { display: "flex", alignItems: "center", gap: 4 },
-  qtyBtn: { width: 28, height: 28, borderRadius: 6, border: "1px solid #333", background: "#1a1a1a", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc" },
-  qtyInput: { width: 44, textAlign: "center", padding: "4px 2px", borderRadius: 6, border: "1px solid #333", fontSize: 14, fontWeight: 700, color: "#fff", background: "#0a0a0a" },
-  planTotal: { marginTop: 14, padding: "10px 14px", background: "#1a1a1a", borderRadius: 8, fontSize: 14, color: "#fff", textAlign: "center" },
+  qtyBtn: { width: 28, height: 28, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" },
+  qtyInput: { width: 44, textAlign: "center", padding: "4px 2px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 700, color: "#6366f1", background: "#fff" },
+  planTotal: { marginTop: 14, padding: "10px 14px", background: "#eef2ff", borderRadius: 8, fontSize: 14, color: "#4338ca", textAlign: "center" },
   typeBreakdown: { marginTop: 8, display: "flex", flexDirection: "column", gap: 3 },
   typeBreakdownRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "3px 0" },
-  typeBreakdownLabel: { color: "#666" },
+  typeBreakdownLabel: { color: "#64748b" },
   typeBreakdownCount: { fontWeight: 700, fontSize: 12 },
 };
