@@ -2049,6 +2049,17 @@ function ContentForm({ initial, clientId, clientTypes, month, year, onSave, onCa
       </div>
 
       <div style={styles.formActions}>
+        <button style={styles.btnCancel} onClick={onCancel}>Cancelar</button>
+        <button style={styles.btnPrimary} onClick={() => title && onSave({
+          ...(initial || {}),
+          clientId, title, type, description: desc, refLink, postDate, recordDate,
+          recorded, delivered,
+        })}>Salvar</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── STYLES — LIGHT THEME ───
 const styles = {
   loadWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0f172a" },
