@@ -193,6 +193,7 @@ export default function PubliPortal() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [showClientForm, setShowClientForm] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showContentForm, setShowContentForm] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [editingContent, setEditingContent] = useState(null);
@@ -374,7 +375,7 @@ export default function PubliPortal() {
 
     return (
       <div style={styles.portal}>
-        <header style={styles.portalHeader}>
+        <header className="gc-portal-header" style={styles.portalHeader}>
           <div style={styles.portalBrand}>
             <div style={styles.logoMark}>GC</div>
             <div>
@@ -388,15 +389,15 @@ export default function PubliPortal() {
           )}
         </header>
 
-        <div style={styles.portalBody}>
+        <div className="gc-portal-body" style={styles.portalBody}>
           {/* Month nav */}
-          <div style={styles.monthNav}>
+          <div className="gc-month-nav" style={styles.monthNav}>
             <button style={styles.monthBtn} onClick={() => {
               setSelectedPortalDay(null);
               if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
               else setViewMonth(viewMonth - 1);
             }}>‹</button>
-            <span style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</span>
+            <span className="gc-month-label" style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</span>
             <button style={styles.monthBtn} onClick={() => {
               setSelectedPortalDay(null);
               if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
@@ -666,8 +667,42 @@ export default function PubliPortal() {
 
   return (
     <div style={styles.admin}>
+      {/* Responsive CSS */}
+      <style>{`
+        @media (max-width: 768px) {
+          .gc-sidebar { position: fixed !important; z-index: 900; height: 100vh; transform: translateX(-100%); transition: transform 0.25s ease; }
+          .gc-sidebar.open { transform: translateX(0); }
+          .gc-overlay { display: block !important; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 899; }
+          .gc-main { padding: 16px 12px !important; }
+          .gc-hamburger { display: flex !important; }
+          .gc-client-actions { flex-direction: column; }
+          .gc-client-actions button { width: 100%; justify-content: center; }
+          .gc-admin-grid { flex-direction: column !important; }
+          .gc-cal-wrap { min-width: 0 !important; }
+          .gc-list-panel { min-width: 0 !important; }
+          .gc-client-header { flex-direction: column; }
+          .gc-tab-bar { overflow-x: auto; }
+          .gc-modal { width: 95% !important; padding: 20px 16px !important; max-height: 85vh !important; }
+          .gc-portal-body { padding: 16px 12px !important; }
+          .gc-portal-header { padding: 12px 16px !important; flex-wrap: wrap; }
+          .gc-dash-metrics { grid-template-columns: repeat(2, 1fr) !important; }
+          .gc-month-nav { gap: 8px !important; }
+          .gc-month-label { font-size: 15px !important; min-width: 120px !important; }
+        }
+      `}</style>
+
+      {/* Mobile hamburger */}
+      <button
+        className="gc-hamburger"
+        style={{ display: "none", position: "fixed", top: 12, left: 12, zIndex: 901, width: 40, height: 40, borderRadius: 10, background: "#0f172a", border: "none", color: "#fff", fontSize: 20, alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >{sidebarOpen ? "✕" : "☰"}</button>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && <div className="gc-overlay" style={{ display: "none" }} onClick={() => setSidebarOpen(false)} />}
+
       {/* Sidebar */}
-      <aside style={styles.sidebar}>
+      <aside className={`gc-sidebar${sidebarOpen ? " open" : ""}`} style={styles.sidebar}>
         <div style={styles.sidebarTop}>
           <div style={styles.logoMark}>GC</div>
           <div style={styles.sidebarBrand}>Gestão de Conteúdo</div>
@@ -680,7 +715,7 @@ export default function PubliPortal() {
               ...(selectedClient === null && view === "admin" ? styles.sidebarItemActive : {}),
               marginBottom: 12,
             }}
-            onClick={() => { setSelectedClient(null); setView("admin"); }}
+            onClick={() => { setSelectedClient(null); setView("admin"); setSidebarOpen(false); }}
           >
             <span style={{ fontSize: 16 }}>📊</span>
             <span style={styles.sidebarName}>Dashboard</span>
@@ -694,7 +729,7 @@ export default function PubliPortal() {
                 ...styles.sidebarItem,
                 ...(selectedClient === c.id ? styles.sidebarItemActive : {}),
               }}
-              onClick={() => setSelectedClient(c.id)}
+              onClick={() => { setSelectedClient(c.id); setSidebarOpen(false); }}
             >
               <span style={styles.sidebarAvatar}>{c.name.charAt(0)}</span>
               <span style={styles.sidebarName}>{c.name}</span>
@@ -707,13 +742,13 @@ export default function PubliPortal() {
       </aside>
 
       {/* Main */}
-      <main style={styles.main}>
+      <main className="gc-main" style={styles.main}>
         {!selectedClient ? (
           <Dashboard data={data} clients={data.clients} contents={data.contents} viewMonth={viewMonth} viewYear={viewYear} setViewMonth={setViewMonth} setViewYear={setViewYear} setSelectedClient={setSelectedClient} />
         ) : (
           <>
             {/* Client header */}
-            <div style={styles.clientHeader}>
+            <div className="gc-client-header" style={styles.clientHeader}>
               <div>
                 <h2 style={styles.clientName}>{clientObj?.name}</h2>
                 <div style={styles.clientMeta}>
@@ -725,7 +760,7 @@ export default function PubliPortal() {
                   </span>
                 </div>
               </div>
-              <div style={styles.clientActions}>
+              <div className="gc-client-actions" style={styles.clientActions}>
                 <button style={styles.btnAI} onClick={() => setShowAIGenerator(true)}>
                   ✨ Gerar conteúdos com IA
                 </button>
@@ -758,7 +793,7 @@ export default function PubliPortal() {
             </div>
 
             {/* Client tabs */}
-            <div style={styles.tabBar}>
+            <div className="gc-tab-bar" style={styles.tabBar}>
               <button
                 style={clientTab === "calendar" ? styles.tabActive : styles.tab}
                 onClick={() => setClientTab("calendar")}
@@ -787,12 +822,12 @@ export default function PubliPortal() {
             <>
 
             {/* Month nav */}
-            <div style={styles.monthNav}>
+            <div className="gc-month-nav" style={styles.monthNav}>
               <button style={styles.monthBtn} onClick={() => {
                 if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
                 else setViewMonth(viewMonth - 1);
               }}>‹</button>
-              <span style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</span>
+              <span className="gc-month-label" style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</span>
               <button style={styles.monthBtn} onClick={() => {
                 if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
                 else setViewMonth(viewMonth + 1);
@@ -800,9 +835,9 @@ export default function PubliPortal() {
             </div>
 
             {/* Admin Calendar + Actions */}
-            <div style={styles.adminGrid}>
+            <div className="gc-admin-grid" style={styles.adminGrid}>
               {/* Calendar */}
-              <div style={styles.adminCalWrap}>
+              <div className="gc-cal-wrap" style={styles.adminCalWrap}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <h3 style={styles.sectionTitle}>Calendário</h3>
                   <div style={{ display: "flex", gap: 8 }}>
@@ -884,7 +919,7 @@ export default function PubliPortal() {
               </div>
 
               {/* Content list panel */}
-              <div style={styles.adminListPanel}>
+              <div className="gc-list-panel" style={styles.adminListPanel}>
                 <h3 style={styles.sectionTitle}>Conteúdos — {MONTHS[viewMonth]}</h3>
                 <div style={styles.adminCounter}>
                   {monthContents.length} de {clientObj?.qtdContents || Object.values(clientObj?.contentPlan || {}).reduce((s,v)=>s+v,0)} planejados
@@ -1542,7 +1577,7 @@ function Dashboard({ data, clients, contents, viewMonth, viewYear, setViewMonth,
           if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
           else setViewMonth(viewMonth - 1);
         }}>‹</button>
-        <span style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</span>
+        <span className="gc-month-label" style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</span>
         <button style={styles.monthBtn} onClick={() => {
           if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
           else setViewMonth(viewMonth + 1);
@@ -1550,7 +1585,7 @@ function Dashboard({ data, clients, contents, viewMonth, viewYear, setViewMonth,
       </div>
 
       {/* ── METRIC CARDS ── */}
-      <div style={styles.dashMetrics}>
+      <div className="gc-dash-metrics" style={styles.dashMetrics}>
         <div style={styles.dashCard}>
           <div style={styles.dashCardIcon}>🗓️</div>
           <div>
@@ -1899,7 +1934,7 @@ function Dashboard({ data, clients, contents, viewMonth, viewYear, setViewMonth,
 function Modal({ children, onClose }) {
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
+      <div className="gc-modal" style={styles.modal} onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -2126,7 +2161,7 @@ const styles = {
   calGrid: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, background: "#e2e8f0", borderRadius: 12, overflow: "hidden", border: "1px solid #e2e8f0" },
   calDayHeader: { background: "#f1f5f9", padding: "8px 0", textAlign: "center", fontSize: 11, fontWeight: 600, color: "#64748b" },
   calCellEmpty: { background: "#f8fafc", minHeight: 72 },
-  calCell: { background: "#fff", minHeight: 72, padding: 6, position: "relative", display: "flex", flexDirection: "column", gap: 2, fontSize: 11 },
+  calCell: { background: "#fff", minHeight: 72, padding: 6, position: "relative", display: "flex", flexDirection: "column", gap: 2, fontSize: 11, WebkitTapHighlightColor: "transparent" },
   calCellRec: { background: "#f97316" },
   calCellVideo: { background: "#7c3aed" },
   calCellImage: { background: "#eab308" },
