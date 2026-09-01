@@ -8,6 +8,18 @@ const CONTENT_TYPES = ["Reels","Carrossel","Stories","Foto","Vídeo Longo","Bast
 const VIDEO_TYPES = ["Reels","Vídeo Longo","Stories","Bastidores","Depoimento"];
 const isVideoContent = (c) => c.format === "video" || VIDEO_TYPES.includes(c.type);
 
+// Build split background for calendar cells with multiple types
+const getCellBackground = (isRec, hasVideo, hasImage) => {
+  const colors = [];
+  if (isRec) colors.push("#f97316");
+  if (hasVideo) colors.push("#7c3aed");
+  if (hasImage) colors.push("#eab308");
+  if (colors.length === 0) return {};
+  if (colors.length === 1) return { background: colors[0] };
+  if (colors.length === 2) return { background: `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)` };
+  return { background: `linear-gradient(135deg, ${colors[0]} 33%, ${colors[1]} 33% 66%, ${colors[2]} 66%)` };
+};
+
 const BRIEF_QUESTIONS = [
   {
     section: "Sobre o negócio",
@@ -441,54 +453,77 @@ export default function PubliPortal() {
             )}
           </div>
 
-          {/* ── SECTION 2: CONTEÚDOS DO MÊS (títulos) ── */}
-          <div style={styles.portalBlock}>
-            <div style={styles.portalBlockHeader}>
-              <span style={styles.portalBlockIcon}>📝</span>
-              <h3 style={styles.portalBlockTitle}>Conteúdos do Mês</h3>
-              {client.contentPlan && Object.keys(client.contentPlan).length > 0 && (
-                <span style={styles.portalBlockCount}>
-                  {contents.length} de {Object.values(client.contentPlan).reduce((s,v)=>s+v,0)}
-                </span>
-              )}
-            </div>
-            {contents.length === 0 ? (
-              <p style={styles.portalEmptyText}>Nenhum conteúdo planejado para este mês.</p>
-            ) : (
-              <div style={styles.portalContentList}>
-                {contents.sort((a,b) => a.postDate.localeCompare(b.postDate)).map(c => {
-                  const postD = new Date(c.postDate + "T12:00:00");
-                  return (
-                    <div key={c.id} style={styles.portalContentRow}>
-                      <div style={styles.portalContentDot(c.type)} />
-                      <span style={styles.portalContentTitle}>{c.title}</span>
-                      {c.refLink && <a href={c.refLink} target="_blank" rel="noopener noreferrer" style={styles.refLinkSmall}>🔗</a>}
-                      <span style={styles.portalContentTypeTag}>{c.type}</span>
-                      <span style={styles.portalContentDate}>{postD.toLocaleDateString("pt-BR")}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          {/* ── SECTION 2: CONTEÚDOS DO MÊS (colapsável, separado por tipo) ── */}
+          {(() => {
+            const videoContents = contents.filter(c => isVideoContent(c)).sort((a,b) => a.postDate.localeCompare(b.postDate));
+            const imageContents = contents.filter(c => !isVideoContent(c)).sort((a,b) => a.postDate.localeCompare(b.postDate));
 
-            {/* Per-type breakdown inline */}
-            {client.contentPlan && Object.keys(client.contentPlan).length > 0 && (
-              <div style={styles.portalTypeSummary}>
-                {Object.entries(client.contentPlan).map(([type, contracted]) => {
-                  const done = contents.filter(c => c.type === type).length;
-                  return (
-                    <div key={type} style={styles.portalTypePill}>
-                      <span style={styles.portalTypePillLabel}>{type}</span>
-                      <span style={{
-                        ...styles.portalTypePillCount,
-                        color: done >= contracted ? "#10b981" : "#6366f1",
-                      }}>{done}/{contracted}</span>
+            const ContentAccordion = ({ title, icon, color, items, count }) => {
+              const [open, setOpen] = useState(false);
+              return (
+                <div style={{ ...styles.portalBlock, padding: 0, overflow: "hidden" }}>
+                  <div
+                    style={{ ...styles.portalBlockHeader, padding: "14px 20px", cursor: "pointer", margin: 0, background: open ? "#f8fafc" : "#fff", borderBottom: open ? "1px solid #e2e8f0" : "none" }}
+                    onClick={() => setOpen(!open)}
+                  >
+                    <span style={styles.portalBlockIcon}>{icon}</span>
+                    <h3 style={styles.portalBlockTitle}>{title}</h3>
+                    <span style={{ ...styles.portalBlockCount, background: color, color: "#fff" }}>{items.length}</span>
+                    <span style={{ fontSize: 16, color: "#94a3b8", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+                  </div>
+                  {open && (
+                    <div style={{ padding: "0 20px 16px" }}>
+                      {items.length === 0 ? (
+                        <p style={{ ...styles.portalEmptyText, padding: "10px 0" }}>Nenhum conteúdo deste tipo.</p>
+                      ) : (
+                        <div style={styles.portalContentList}>
+                          {items.map(c => {
+                            const postD = new Date(c.postDate + "T12:00:00");
+                            return (
+                              <div key={c.id} style={styles.portalContentRow}>
+                                <div style={{ width: 4, height: 32, borderRadius: 2, background: color, flexShrink: 0 }} />
+                                <span style={styles.portalContentTitle}>{c.title}</span>
+                                {c.refLink && <a href={c.refLink} target="_blank" rel="noopener noreferrer" style={styles.refLinkSmall} onClick={e => e.stopPropagation()}>🔗</a>}
+                                <span style={styles.portalContentTypeTag}>{c.type}</span>
+                                <span style={styles.portalContentDate}>{postD.toLocaleDateString("pt-BR")}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+              );
+            };
+
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <ContentAccordion title="Vídeos / Reels" icon="🎬" color="#7c3aed" items={videoContents} />
+                <ContentAccordion title="Fotos / Imagens" icon="🖼" color="#eab308" items={imageContents} />
+
+                {/* Per-type breakdown */}
+                {client.contentPlan && Object.keys(client.contentPlan).length > 0 && (
+                  <div style={{ ...styles.portalBlock, padding: "12px 20px" }}>
+                    <div style={styles.portalTypeSummary}>
+                      {Object.entries(client.contentPlan).map(([type, contracted]) => {
+                        const done = contents.filter(c => c.type === type).length;
+                        return (
+                          <div key={type} style={styles.portalTypePill}>
+                            <span style={styles.portalTypePillLabel}>{type}</span>
+                            <span style={{
+                              ...styles.portalTypePillCount,
+                              color: done >= contracted ? "#10b981" : "#6366f1",
+                            }}>{done}/{contracted}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* ── SECTION 3: CALENDÁRIO INTERATIVO ── */}
           <div style={styles.portalBlock}>
@@ -520,14 +555,14 @@ export default function PubliPortal() {
                 const hasContent = dayContents.length > 0 || isRec;
                 const hasVideo = dayContents.some(c => isVideoContent(c));
                 const hasImage = dayContents.some(c => !isVideoContent(c));
-                const cellColor = isRec ? styles.calCellRec : hasVideo ? styles.calCellVideo : hasImage ? styles.calCellImage : {};
+                const splitBg = getCellBackground(isRec, hasVideo, hasImage);
                 const isColored = isRec || hasVideo || hasImage;
                 return (
                   <div
                     key={day}
                     style={{
                       ...styles.calCell,
-                      ...cellColor,
+                      ...splitBg,
                       ...(isToday ? styles.calCellToday : {}),
                       ...(isSelected ? styles.calCellSelected : {}),
                       ...(hasContent ? { cursor: "pointer" } : {}),
@@ -805,14 +840,14 @@ export default function PubliPortal() {
                     const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
                     const hasVideo = dayContents.some(c => isVideoContent(c));
                     const hasImage = dayContents.some(c => !isVideoContent(c));
-                    const cellColor = isRec ? styles.calCellRec : hasVideo ? styles.calCellVideo : hasImage ? styles.calCellImage : {};
+                    const splitBg = getCellBackground(isRec, hasVideo, hasImage);
                     const isColored = isRec || hasVideo || hasImage;
                     return (
                       <div
                         key={day}
                         style={{
                           ...styles.calCell,
-                          ...cellColor,
+                          ...splitBg,
                           ...(isToday ? styles.calCellToday : {}),
                           ...(showRecordingPicker && hasConflict && !isRec ? styles.calCellConflict : {}),
                           ...(showRecordingPicker ? { cursor: "pointer" } : {}),
