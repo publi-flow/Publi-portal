@@ -1176,6 +1176,13 @@ ${prompt ? `Tema/contexto específico: ${prompt}` : "Gere ideias estratégicas p
       });
 
       const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setError("Erro da API: " + (data.error?.message || data.error || JSON.stringify(data)));
+        setLoading(false);
+        return;
+      }
+
       const text = data.content?.map(i => i.text || "").join("") || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
@@ -1183,7 +1190,7 @@ ${prompt ? `Tema/contexto específico: ${prompt}` : "Gere ideias estratégicas p
       setSelected(new Set(parsed.map((_, i) => i)));
       setStep("results");
     } catch (err) {
-      setError("Erro ao gerar conteúdos. Tente novamente.");
+      setError("Erro: " + err.message);
       console.error(err);
     }
     setLoading(false);
