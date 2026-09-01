@@ -101,7 +101,7 @@ function generateRecordingDayPDF(client, dateStr, contents) {
         <span style="font-size:11px;font-weight:700;color:#6366f1;background:#eef2ff;border-radius:5px;padding:4px 10px;">${c.type}</span>
         <span style="font-size:12px;color:#94a3b8;">Conteúdo ${i + 1} de ${contents.length}</span>
       </div>
-      <div style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:6px;">${c.title}</div>
+      <div style="font-size:18px;font-weight:700;color:#000;margin-bottom:6px;">${c.title}</div>
       ${c.description ? `<div style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:8px;">${c.description}</div>` : ""}
       ${c.postDate ? `<div style="font-size:12px;color:#64748b;margin-top:8px;">📅 Postagem prevista: ${new Date(c.postDate + "T12:00:00").toLocaleDateString("pt-BR")}</div>` : ""}
       ${c.refLink ? `<div style="margin-top:6px;"><a href="${c.refLink}" target="_blank" style="font-size:12px;color:#4338ca;text-decoration:none;background:#eef2ff;border-radius:4px;padding:4px 10px;display:inline-block;">🔗 Ver referência</a></div>` : ""}
@@ -122,7 +122,7 @@ function generateRecordingDayPDF(client, dateStr, contents) {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Inter',system-ui,sans-serif; background:#f8fafc; color:#1e293b; padding:0; }
+  body { font-family:'Inter',system-ui,sans-serif; background:#f8fafc; color:#111; padding:0; }
   @media print {
     body { background:#fff; }
     .no-print { display:none !important; }
@@ -138,9 +138,9 @@ function generateRecordingDayPDF(client, dateStr, contents) {
   <div class="page">
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
-      <div style="width:44px;height:44px;border-radius:12px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;">GC</div>
+      <div style="width:44px;height:44px;border-radius:12px;background:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;">P</div>
       <div>
-        <div style="font-size:20px;font-weight:800;color:#0f172a;">Pauta de Gravação</div>
+        <div style="font-size:20px;font-weight:800;color:#000;">Pauta de Gravação</div>
         <div style="font-size:13px;color:#94a3b8;">Agência Publi</div>
       </div>
     </div>
@@ -149,7 +149,7 @@ function generateRecordingDayPDF(client, dateStr, contents) {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
       <div>
         <div style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:2px;">Cliente</div>
-        <div style="font-size:22px;font-weight:800;color:#0f172a;">${client.name}</div>
+        <div style="font-size:22px;font-weight:800;color:#000;">${client.name}</div>
       </div>
       <div style="text-align:right;">
         <div style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:2px;">Data da gravação</div>
@@ -160,7 +160,7 @@ function generateRecordingDayPDF(client, dateStr, contents) {
 
     <!-- Summary -->
     <div style="background:#f8fafc;border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-      <div style="font-size:14px;color:#475569;"><strong style="color:#0f172a;font-size:20px;">${contents.length}</strong> conteúdo${contents.length > 1 ? "s" : ""} para gravar</div>
+      <div style="font-size:14px;color:#475569;"><strong style="color:#000;font-size:20px;">${contents.length}</strong> conteúdo${contents.length > 1 ? "s" : ""} para gravar</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">${typePills}</div>
     </div>
 
@@ -169,7 +169,7 @@ function generateRecordingDayPDF(client, dateStr, contents) {
 
     <!-- Footer -->
     <div style="margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;">
-      Documento gerado pelo Gestão de Conteúdo · ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+      Documento gerado pelo Console Content · ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
     </div>
   </div>
 </body>
@@ -377,9 +377,9 @@ export default function PubliPortal() {
       <div style={styles.portal}>
         <header className="gc-portal-header" style={styles.portalHeader}>
           <div style={styles.portalBrand}>
-            <div style={styles.logoMark}>GC</div>
+            <img src="/logo-publi.png" alt="Publi" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain", background: "#000" }} />
             <div>
-              <div style={styles.portalTitle}>Gestão de Conteúdo</div>
+              <div style={styles.portalTitle}>Console Content</div>
               <div style={styles.portalSub}>Agência Publi</div>
             </div>
           </div>
@@ -694,7 +694,7 @@ export default function PubliPortal() {
       {/* Mobile hamburger */}
       <button
         className="gc-hamburger"
-        style={{ display: "none", position: "fixed", top: 12, left: 12, zIndex: 901, width: 40, height: 40, borderRadius: 10, background: "#0f172a", border: "none", color: "#fff", fontSize: 20, alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        style={{ display: "none", position: "fixed", top: 12, left: 12, zIndex: 901, width: 40, height: 40, borderRadius: 10, background: "#000", border: "none", color: "#fff", fontSize: 20, alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >{sidebarOpen ? "✕" : "☰"}</button>
 
@@ -704,8 +704,8 @@ export default function PubliPortal() {
       {/* Sidebar */}
       <aside className={`gc-sidebar${sidebarOpen ? " open" : ""}`} style={styles.sidebar}>
         <div style={styles.sidebarTop}>
-          <div style={styles.logoMark}>GC</div>
-          <div style={styles.sidebarBrand}>Gestão de Conteúdo</div>
+          <img src="/logo-publi.png" alt="Publi" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain", background: "#000" }} />
+          <div style={styles.sidebarBrand}>Console Content</div>
         </div>
         <div style={styles.sidebarSection}>
           {/* Dashboard nav */}
@@ -1090,7 +1090,7 @@ function RecordingDayForm({ dateStr, existing, conflicts, onSave, onRemove, onCa
   return (
     <div>
       <h3 style={styles.formTitle}>{existing ? "📹 Editar gravação" : "📹 Nova gravação"}</h3>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>{dateLabel}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: "#000", marginBottom: 16 }}>{dateLabel}</div>
 
       {/* Conflict warning */}
       {hasConflicts && (
@@ -1175,7 +1175,7 @@ function ClientBriefing({ client, onSave }) {
       {/* Progress bar */}
       <div style={styles.briefProgress}>
         <div style={styles.briefProgressInfo}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#000" }}>
             🧠 Briefing preenchido: {filled} de {total} campos
           </span>
           <span style={{ fontSize: 14, fontWeight: 800, color: pct === 100 ? "#10b981" : "#6366f1" }}>{pct}%</span>
@@ -1434,7 +1434,7 @@ ${prompt ? `Tema/contexto específico: ${prompt}` : "Gere ideias estratégicas p
                       {r.format === "imagem" ? "🖼 Imagem" : "🎬 Vídeo"}
                     </span>
                     <span style={styles.contentTypeTag}>{r.type}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{r.title}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#000" }}>{r.title}</span>
                   </div>
                   {r.description && (
                     <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>{r.description}</div>
@@ -1476,7 +1476,7 @@ ${prompt ? `Tema/contexto específico: ${prompt}` : "Gere ideias estratégicas p
                         {r.format === "imagem" ? "🖼" : "🎬"}
                       </span>
                       <span style={styles.contentTypeTag}>{r.type}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#000", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</span>
                     </div>
                     <div style={{ minWidth: 150 }}>
                       <input
@@ -1566,7 +1566,7 @@ function Dashboard({ data, clients, contents, viewMonth, viewYear, setViewMonth,
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 800, color: "#0f172a" }}>Dashboard</h2>
+      <h2 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 800, color: "#000" }}>Dashboard</h2>
       <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 20px" }}>
         Visão geral da agência — {MONTHS[viewMonth]} {viewYear}
       </p>
@@ -1754,7 +1754,7 @@ function Dashboard({ data, clients, contents, viewMonth, viewYear, setViewMonth,
                           }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                                <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", cursor: "pointer" }}
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "#000", cursor: "pointer" }}
                                   onClick={() => setSelectedClient(r.clientId)}
                                 >{r.clientName}</span>
                               </div>
@@ -1916,7 +1916,7 @@ function Dashboard({ data, clients, contents, viewMonth, viewYear, setViewMonth,
                   style={styles.dashTableRow}
                   onClick={() => setSelectedClient(cl.id)}
                 >
-                  <span style={{ flex: 2, fontWeight: 600, color: "#1e293b", cursor: "pointer" }}>{cl.name}</span>
+                  <span style={{ flex: 2, fontWeight: 600, color: "#111", cursor: "pointer" }}>{cl.name}</span>
                   <span style={styles.dashTableCol}>{clContents.length}</span>
                   <span style={{ ...styles.dashTableCol, color: clGrav > 0 ? "#f97316" : "#cbd5e1" }}>{clGrav}</span>
                   <span style={{ ...styles.dashTableCol, color: clDeliv > 0 ? "#10b981" : "#cbd5e1" }}>{clDeliv}</span>
@@ -2132,29 +2132,29 @@ function ContentForm({ initial, clientId, clientTypes, month, year, onSave, onCa
 
 // ─── STYLES — LIGHT THEME ───
 const styles = {
-  loadWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0f172a" },
+  loadWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#000" },
   loadDot: { width: 32, height: 32, borderRadius: "50%", background: "#6366f1" },
-  admin: { display: "flex", height: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", color: "#1e293b" },
-  sidebar: { width: 240, background: "#0f172a", color: "#e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 },
-  sidebarTop: { display: "flex", alignItems: "center", gap: 10, padding: "20px 16px 12px", borderBottom: "1px solid #1e293b" },
+  admin: { display: "flex", height: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", color: "#111" },
+  sidebar: { width: 240, background: "#000", color: "#e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 },
+  sidebarTop: { display: "flex", alignItems: "center", gap: 10, padding: "20px 16px 12px", borderBottom: "1px solid #111" },
   logoMark: { width: 36, height: 36, borderRadius: 10, background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: "#fff" },
   sidebarBrand: { fontWeight: 700, fontSize: 15, letterSpacing: -0.3 },
   sidebarSection: { padding: "16px 12px", flex: 1, overflowY: "auto" },
   sidebarLabel: { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   sidebarItem: { display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginBottom: 2 },
-  sidebarItemActive: { background: "#1e293b" },
+  sidebarItemActive: { background: "#111" },
   sidebarAvatar: { width: 28, height: 28, borderRadius: 7, background: "#334155", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#94a3b8", flexShrink: 0 },
   sidebarName: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   btnAddClient: { width: "100%", padding: "10px 0", background: "transparent", border: "1px dashed #334155", color: "#94a3b8", borderRadius: 8, cursor: "pointer", fontSize: 13, marginTop: 8 },
   main: { flex: 1, overflowY: "auto", padding: "24px 32px" },
   emptyState: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" },
   clientHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: "wrap" },
-  clientName: { margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a" },
+  clientName: { margin: 0, fontSize: 22, fontWeight: 700, color: "#000" },
   clientMeta: { fontSize: 13, color: "#64748b", marginTop: 2 },
   clientActions: { display: "flex", gap: 8, flexWrap: "wrap" },
   monthNav: { display: "flex", alignItems: "center", gap: 16, justifyContent: "center", margin: "16px 0" },
   monthBtn: { background: "none", border: "1px solid #e2e8f0", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 18, color: "#475569", display: "flex", alignItems: "center", justifyContent: "center" },
-  monthLabel: { fontSize: 17, fontWeight: 600, color: "#0f172a", minWidth: 160, textAlign: "center" },
+  monthLabel: { fontSize: 17, fontWeight: 600, color: "#000", minWidth: 160, textAlign: "center" },
   legend: { display: "flex", gap: 16, justifyContent: "center", marginBottom: 12, flexWrap: "wrap" },
   legendItem: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#64748b" },
   legendDot: { width: 10, height: 10, borderRadius: "50%", display: "inline-block" },
@@ -2165,7 +2165,7 @@ const styles = {
   calCellRec: { background: "#f97316" },
   calCellVideo: { background: "#7c3aed" },
   calCellImage: { background: "#eab308" },
-  calCellToday: { boxShadow: "inset 0 0 0 2px #0f172a" },
+  calCellToday: { boxShadow: "inset 0 0 0 2px #000" },
   calCellDay: { fontWeight: 600, fontSize: 13, color: "#334155" },
   recBadge: { fontSize: 10, background: "rgba(255,255,255,0.3)", borderRadius: 4, padding: "1px 4px", color: "#fff" },
   recBadgeSmall: { fontSize: 10 },
@@ -2174,11 +2174,11 @@ const styles = {
   adminGrid: { display: "flex", gap: 24, marginTop: 8, flexWrap: "wrap" },
   adminCalWrap: { flex: 2, minWidth: 380 },
   adminListPanel: { flex: 1, minWidth: 260, background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 16 },
-  sectionTitle: { margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: "#0f172a" },
+  sectionTitle: { margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: "#000" },
   adminCounter: { fontSize: 12, color: "#6366f1", fontWeight: 600 },
   adminContentItem: { background: "#f8fafc", borderRadius: 8, padding: "10px 12px", border: "1px solid #f1f5f9" },
   contentTypeTag: { fontSize: 10, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 4, padding: "2px 6px", marginRight: 8 },
-  adminContentTitle: { fontSize: 13, fontWeight: 600, color: "#1e293b" },
+  adminContentTitle: { fontSize: 13, fontWeight: 600, color: "#111" },
   adminContentMeta: { display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: "#94a3b8", flexWrap: "wrap" },
   btnPrimary: { padding: "8px 16px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   btnSecondary: { padding: "8px 14px", background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 8, cursor: "pointer", fontSize: 13 },
@@ -2191,8 +2191,8 @@ const styles = {
   btnCancel: { padding: "8px 16px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13 },
   btnBack: { padding: "10px 20px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, marginTop: 16 },
   btnBackPortal: { padding: "6px 16px", background: "rgba(255,255,255,0.15)", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, cursor: "pointer", fontSize: 13 },
-  portal: { minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", color: "#1e293b" },
-  portalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", background: "#0f172a", color: "#e2e8f0", flexWrap: "wrap", gap: 12 },
+  portal: { minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", color: "#111" },
+  portalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", background: "#000", color: "#e2e8f0", flexWrap: "wrap", gap: 12 },
   portalBrand: { display: "flex", alignItems: "center", gap: 10 },
   portalTitle: { fontWeight: 700, fontSize: 16, lineHeight: 1.2 },
   portalSub: { fontSize: 11, color: "#94a3b8" },
@@ -2200,13 +2200,13 @@ const styles = {
   portalBody: { maxWidth: 860, margin: "0 auto", padding: "24px 20px" },
   portalEmpty: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh" },
   portalSection: { marginTop: 32 },
-  portalH3: { margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#0f172a" },
+  portalH3: { margin: "0 0 12px", fontSize: 17, fontWeight: 700, color: "#000" },
   contentList: { display: "flex", flexDirection: "column", gap: 10 },
   contentCard: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1px solid #e2e8f0" },
   contentCardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   contentType: { fontSize: 11, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 5, padding: "3px 8px" },
   contentPostDate: { fontSize: 12, color: "#94a3b8" },
-  contentTitle: { fontSize: 15, fontWeight: 600, color: "#0f172a" },
+  contentTitle: { fontSize: 15, fontWeight: 600, color: "#000" },
   contentDesc: { fontSize: 13, color: "#64748b", marginTop: 4 },
   contentRecDate: { fontSize: 12, color: "#c2410c", marginTop: 6 },
   summaryRow: { display: "flex", gap: 12, marginTop: 32, flexWrap: "wrap" },
@@ -2215,9 +2215,9 @@ const styles = {
   summaryLabel: { fontSize: 13, color: "#64748b", marginTop: 4 },
   overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
   modal: { background: "#fff", borderRadius: 16, padding: "28px 32px", width: "90%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 48px rgba(0,0,0,0.2)" },
-  formTitle: { margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: "#0f172a" },
+  formTitle: { margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: "#000" },
   formLabel: { display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginTop: 14, marginBottom: 4 },
-  input: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, color: "#1e293b", outline: "none", boxSizing: "border-box", background: "#f8fafc" },
+  input: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, color: "#111", outline: "none", boxSizing: "border-box", background: "#f8fafc" },
   typeGrid: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 },
   typeTag: { padding: "6px 12px", borderRadius: 20, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 12, cursor: "pointer" },
   typeTagActive: { padding: "6px 12px", borderRadius: 20, border: "1px solid #6366f1", background: "#eef2ff", color: "#4338ca", fontSize: 12, cursor: "pointer", fontWeight: 600 },
@@ -2228,7 +2228,7 @@ const styles = {
   portalBlock: { background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: "20px 24px", marginBottom: 16 },
   portalBlockHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 },
   portalBlockIcon: { fontSize: 20 },
-  portalBlockTitle: { margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a", flex: 1 },
+  portalBlockTitle: { margin: 0, fontSize: 17, fontWeight: 700, color: "#000", flex: 1 },
   portalBlockCount: { fontSize: 13, fontWeight: 700, color: "#6366f1", background: "#eef2ff", borderRadius: 20, padding: "4px 12px" },
   portalEmptyText: { color: "#94a3b8", fontSize: 14, margin: "4px 0" },
   recDaysList: { display: "flex", gap: 10, flexWrap: "wrap" },
@@ -2246,7 +2246,7 @@ const styles = {
   portalContentList: { display: "flex", flexDirection: "column", gap: 0 },
   portalContentRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #f1f5f9" },
   portalContentDot: () => ({ width: 8, height: 8, borderRadius: "50%", background: "#6366f1", flexShrink: 0 }),
-  portalContentTitle: { fontSize: 14, fontWeight: 500, color: "#1e293b", flex: 1 },
+  portalContentTitle: { fontSize: 14, fontWeight: 500, color: "#111", flex: 1 },
   portalContentTypeTag: { fontSize: 11, color: "#6366f1", background: "#eef2ff", borderRadius: 4, padding: "2px 8px", fontWeight: 600, flexShrink: 0 },
   portalContentDate: { fontSize: 12, color: "#94a3b8", flexShrink: 0 },
   portalTypeSummary: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14, paddingTop: 14, borderTop: "1px solid #f1f5f9" },
@@ -2258,7 +2258,7 @@ const styles = {
   calContentDot: { width: 6, height: 6, borderRadius: "50%", background: "#6366f1" },
   dayDetail: { marginTop: 14, background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 22px" },
   dayDetailHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  dayDetailDate: { fontSize: 18, fontWeight: 700, color: "#0f172a", marginRight: 8 },
+  dayDetailDate: { fontSize: 18, fontWeight: 700, color: "#000", marginRight: 8 },
   dayDetailWeekday: { fontSize: 14, color: "#64748b" },
   dayDetailClose: { background: "none", border: "none", fontSize: 18, color: "#94a3b8", cursor: "pointer", padding: "4px 8px" },
   dayDetailRecBanner: { background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 14px", fontSize: 14, fontWeight: 600, color: "#c2410c", marginBottom: 12, display: "flex", flexDirection: "column", gap: 4 },
@@ -2266,7 +2266,7 @@ const styles = {
   dayDetailContents: { display: "flex", flexDirection: "column", gap: 10 },
   dayDetailCard: { background: "#fff", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" },
   dayDetailCardHeader: { marginBottom: 6 },
-  dayDetailCardTitle: { fontSize: 16, fontWeight: 600, color: "#0f172a", marginBottom: 4 },
+  dayDetailCardTitle: { fontSize: 16, fontWeight: 600, color: "#000", marginBottom: 4 },
   dayDetailCardDesc: { fontSize: 13, color: "#64748b", lineHeight: 1.5 },
   dayDetailCardRec: { fontSize: 12, color: "#c2410c", marginTop: 8 },
   statusRow: { display: "flex", gap: 12, marginTop: 6 },
@@ -2275,7 +2275,7 @@ const styles = {
   checkOff: { width: 22, height: 22, borderRadius: 6, border: "2px solid #cbd5e1", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" },
   btnPDF: { padding: "5px 10px", background: "#eef2ff", color: "#4338ca", border: "1px solid #c7d2fe", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" },
   btnAI: { padding: "8px 16px", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" },
-  aiClientInfo: { background: "#f8fafc", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#1e293b", marginBottom: 14, border: "1px solid #e2e8f0" },
+  aiClientInfo: { background: "#f8fafc", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#111", marginBottom: 14, border: "1px solid #e2e8f0" },
   aiError: { background: "#fef2f2", color: "#dc2626", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginTop: 10 },
   aiResultList: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 340, overflowY: "auto" },
   aiResultItem: { display: "flex", gap: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer", background: "#fff" },
@@ -2297,13 +2297,13 @@ const styles = {
   briefProgressFill: { height: "100%", borderRadius: 3, transition: "width 0.3s" },
   briefSection: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", marginBottom: 8, overflow: "hidden" },
   briefSectionHeader: { display: "flex", alignItems: "center", gap: 8, padding: "14px 18px", cursor: "pointer", userSelect: "none" },
-  briefSectionTitle: { flex: 1, fontSize: 15, fontWeight: 700, color: "#0f172a" },
+  briefSectionTitle: { flex: 1, fontSize: 15, fontWeight: 700, color: "#000" },
   briefSectionCount: { fontSize: 12, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 10, padding: "2px 8px" },
   briefSectionBody: { padding: "0 18px 18px" },
   dashMetrics: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 24 },
   dashCard: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 6 },
   dashCardIcon: { fontSize: 22 },
-  dashCardNum: { fontSize: 32, fontWeight: 800, color: "#0f172a", lineHeight: 1 },
+  dashCardNum: { fontSize: 32, fontWeight: 800, color: "#000", lineHeight: 1 },
   dashCardLabel: { fontSize: 13, color: "#64748b" },
   dashCardBar: { height: 4, background: "#f1f5f9", borderRadius: 2, marginTop: 4, overflow: "hidden" },
   dashCardBarFill: { height: "100%", borderRadius: 2, transition: "width 0.3s" },
@@ -2311,14 +2311,14 @@ const styles = {
   dashSection: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "18px 22px", marginBottom: 16 },
   dashSectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" },
   dashSectionIcon: { fontSize: 18 },
-  dashSectionTitle: { margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a", flex: 1 },
+  dashSectionTitle: { margin: 0, fontSize: 16, fontWeight: 700, color: "#000", flex: 1 },
   dashSectionDate: { fontSize: 12, color: "#94a3b8", fontWeight: 500 },
   dashEmpty: { padding: "16px 0", fontSize: 13, color: "#94a3b8", textAlign: "center" },
   dashPostList: { display: "flex", flexDirection: "column", gap: 6 },
   dashPostItem: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, border: "1px solid #f1f5f9", background: "#f8fafc", gap: 12, flexWrap: "wrap" },
   dashPostLeft: { display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 },
   dashPostDot: (delivered) => ({ width: 10, height: 10, borderRadius: "50%", background: delivered ? "#10b981" : "#f59e0b", flexShrink: 0 }),
-  dashPostTitle: { fontSize: 14, fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  dashPostTitle: { fontSize: 14, fontWeight: 600, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   dashPostMeta: { display: "flex", gap: 6, alignItems: "center", marginTop: 2 },
   dashPostClient: { fontSize: 12, color: "#6366f1", cursor: "pointer", fontWeight: 500 },
   dashPostStatus: { flexShrink: 0 },
@@ -2337,7 +2337,7 @@ const styles = {
   btnCopied: { padding: "8px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 },
   btnShare: { padding: "8px 14px", background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 },
   typePlanRow: { display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", borderRadius: 8, padding: "8px 12px", border: "1px solid #e2e8f0" },
-  typePlanName: { fontSize: 14, fontWeight: 600, color: "#1e293b" },
+  typePlanName: { fontSize: 14, fontWeight: 600, color: "#111" },
   typePlanControls: { display: "flex", alignItems: "center", gap: 4 },
   qtyBtn: { width: 28, height: 28, borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" },
   qtyInput: { width: 44, textAlign: "center", padding: "4px 2px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 700, color: "#6366f1", background: "#fff" },
